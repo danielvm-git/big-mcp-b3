@@ -1,0 +1,34 @@
+# Minimal CI. Runs the gates that are actually runnable today.
+#
+# NOTE: package.json declares `test` (vitest) and `lint` (eslint), but neither
+# tool is present in package-lock.json, so `npm ci && npm test` fails with
+# "vitest: not found". Those steps are deliberately NOT wired here — a gate
+# that is red on day one gets disabled, and a disabled gate is worse than none.
+# See the PR for the one-line fix to re-enable them.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
