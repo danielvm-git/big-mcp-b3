@@ -1,0 +1,42 @@
+# CI for big-mcp-b3.
+#
+# The committed package-lock.json was out of sync with package.json (typescript
+# 7.0.2 vs 5.9.3, zod 4.4.3 vs 3.25.76, vitest absent entirely), so `npm ci`
+# failed outright — this repo could not be installed from a clean checkout.
+# The lockfile is regenerated in this branch; all steps below verified locally.
+#
+# `lint` is still not wired: package.json declares `eslint src --ext .ts` but
+# eslint is not a dependency at all. Adding a gate that is red on day one just
+# gets it disabled, so that needs the dep + a config first.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+
+      # --passWithNoTests is required until the first test exists (currently 0).
+      # Drop the flag once there is one real test, so an empty suite cannot pass.
+      - name: Test
+        run: npx vitest run --passWithNoTests
